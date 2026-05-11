@@ -102,7 +102,7 @@ pip install triton==2.0.0
 
 | 阶段 | 投影 | CUDA 模块 | 原因 |
 |------|------|----------|------|
-| 训练 | 透视 | DIFIX | 必须匹配输入照片（针孔相机模型） |
+| 训练 | 透视 | 3DGS | 必须匹配输入照片（pinhole/simple pinhole） |
 | 渲染 | 正交 | Tortho | 俯视平面图需要平行投影 |
 
 #### 1.1 透视投影（训练）
@@ -242,9 +242,9 @@ $$\hat{n} = \arg\max_{n} |\{p_i : |n \cdot (p_i - p_0)| < \tau\}|$$
 
 **地面 vs 天花板判定**：临时将法线旋转到 Z，检查垂直分布：
 
-$$\text{span}_{low} = P_{50}(z) - P_{10}(z), \quad \text{span}_{high} = P_{90}(z) - P_{50}(z)$$
+$$\text{span}_\text{low} = P_{50}(z) - P_{10}(z), \quad \text{span}_\text{high} = P_{90}(z) - P_{50}(z)$$
 
-若 $\text{span}_{low} \geq \text{span}_{high}$，拟合的平面是天花板 — 翻转 $n \leftarrow -n$。
+若 $\text{span}_\text{low} \geq \text{span}_\text{high}$，拟合的平面是天花板 — 翻转 $n \leftarrow -n$。
 
 **Rodrigues 旋转**将 $n$ 对齐到 $[0,0,1]$：
 
@@ -470,7 +470,7 @@ for row in range(1, 6):
 
 | 文件 | 修改内容 |
 |------|---------|
-| `utils/graphics_utils.py` | `getProjectionMatrix()` 增加 `orthographic` 参数；正交分支返回 `(半宽, 半高, 矩阵)` 三元组 |
+| `utils/graphics_utils.py` | `getProjectionMatrix()` 增加 `orthographic` 参数；正交分支返回 `(half_w, half_h, matrix)` 三元组 |
 | `gaussian_renderer_ortho.py` | 新建独立正交渲染器，调用 Tortho CUDA 模块 |
 | `scene/cameras.py` | `Camera` 增加 `get_full_proj_transform(orthographic)` 方法，运行时动态选择投影 |
 | `forward.cu` | `computeCov2D()` 增加 `orthographic` 参数和正交雅可比分支 |
@@ -508,7 +508,6 @@ Torthosplatting/
 ## 致谢
 
 - **[3D Gaussian Splatting](https://github.com/graphdeco-inria/gaussian-splatting)** — 实时辐射场渲染
-- **[2D Gaussian Splatting](https://github.com/hbb1/2d-gaussian-splatting)** — 深度正则化训练
 - **[DIFIX3D+](https://research.nvidia.com/labs/toronto-ai/difix3d/)** — 单步扩散模型修复 3D 重建 (CVPR 2025 Oral)
 - **[DepthAnythingV2](https://github.com/DepthAnything/Depth-Anything-V2)** — 单目深度估计
 - **[COLMAP](https://github.com/colmap/colmap)** — 稀疏重建

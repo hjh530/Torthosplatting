@@ -102,7 +102,7 @@ The relationship between training (perspective) and rendering (orthographic) is:
 
 | Stage | Projection | CUDA Module | Why |
 |-------|-----------|-------------|-----|
-| Training | Perspective | DIFIX | Must match input photos (pinhole camera model) |
+| Training | Perspective | 3DGS | Must match input photos (pinhole/simple pinhole) |
 | Rendering | Orthographic | Tortho | Top-down floor plan needs parallel projection |
 
 #### 1.1 Perspective Projection (Training)
@@ -242,9 +242,9 @@ where $\tau = 0.02$ is the distance threshold.
 
 **Ground vs. ceiling detection**: temporarily rotate the normal to Z, then examine the vertical distribution:
 
-$$\text{span}_{low} = P_{50}(z) - P_{10}(z), \quad \text{span}_{high} = P_{90}(z) - P_{50}(z)$$
+$$\text{span}_\text{low} = P_{50}(z) - P_{10}(z), \quad \text{span}_\text{high} = P_{90}(z) - P_{50}(z)$$
 
-If $\text{span}_{low} \geq \text{span}_{high}$, the fitted plane is a ceiling — flip $n \leftarrow -n$.
+If $\text{span}_\text{low} \geq \text{span}_\text{high}$, the fitted plane is a ceiling — flip $n \leftarrow -n$.
 
 **Rodrigues rotation** to align $n$ to $[0,0,1]$:
 
@@ -465,7 +465,7 @@ for row in range(1, 6):
 
 | File | Change |
 |------|--------|
-| `utils/graphics_utils.py` | `getProjectionMatrix()` adds `orthographic` parameter; ortho branch returns `(half_w, half_h, matrix)` tuple |
+| `utils/graphics_utils.py` | `getProjectionMatrix()` adds `orthographic` parameter; ortho branch returns `(half_w, half_h, matrix)` |
 | `gaussian_renderer_ortho.py` | New standalone orthographic renderer calling Tortho CUDA |
 | `scene/cameras.py` | `Camera` adds `get_full_proj_transform(orthographic)` for runtime projection selection |
 | `forward.cu` | `computeCov2D()` adds `orthographic` parameter and ortho Jacobian branch |
@@ -503,7 +503,6 @@ Torthosplatting/
 ## Acknowledgments
 
 - **[3D Gaussian Splatting](https://github.com/graphdeco-inria/gaussian-splatting)** — Real-time radiance field rendering
-- **[2D Gaussian Splatting](https://github.com/hbb1/2d-gaussian-splatting)** — Depth-regularized training
 - **[DIFIX3D+](https://research.nvidia.com/labs/toronto-ai/difix3d/)** — Single-step diffusion for 3D restoration (CVPR 2025 Oral)
 - **[DepthAnythingV2](https://github.com/DepthAnything/Depth-Anything-V2)** — Monocular depth estimation
 - **[COLMAP](https://github.com/colmap/colmap)** — Structure-from-Motion

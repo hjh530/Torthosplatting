@@ -1,20 +1,24 @@
 # Torthosplatting / 正射高斯
 
-> **一键式 COLMAP → 正射影像拼接流水线，集成深度估计、3DGS 训练、正射渲染与 Difix 扩散修复。**
+> **室内正射影像自动生成工具 — 一键式 COLMAP → 房间平面图，服务于室内设计与租房看房。**
 >
-> *One-click pipeline: COLMAP → orthophoto stitching, integrating depth estimation, 3DGS training, orthographic rendering, and Difix diffusion restoration.*
+> *Automatic indoor orthophoto generation — one-click COLMAP → room floor plan for interior design and rental viewing.*
 
 ---
 
 ## 简介 / Introduction
 
-**Torthosplatting** 是一个面向近景摄影测量的端到端正射影像生成工具。输入 COLMAP 稀疏重建结果（`sparse/0`），自动完成坐标系对齐、虚拟正射相机生成、单目深度估计、3D Gaussian Splatting 训练、正射渲染、Difix 扩散模型修复，最终输出拼接后的正射大图。
+**Torthosplatting** 是一个面向室内场景的正射影像自动生成工具。输入手机或相机拍摄的房间视频/照片，经 COLMAP 稀疏重建后，一键生成高质量的房间正射平面图，用于**室内设计、租房看房、房产展示**等场景。
 
-核心创新在于将透视投影训练与正交投影渲染解耦为两套独立的 CUDA 光栅化模块，解决了 3DGS 在正射视角下的边缘伪影问题。
+核心流程：COLMAP 稀疏重建 → 坐标系自动对齐 → 虚拟正射相机生成 → 单目深度估计 → 3DGS 训练（透视投影）→ 正射渲染（正交投影）→ Difix 扩散模型修复 → 拼接输出。
 
-**Torthosplatting** is an end-to-end orthophoto generation tool for close-range photogrammetry. Given a COLMAP sparse reconstruction (`sparse/0`), it automatically performs coordinate alignment, virtual ortho-camera generation, monocular depth estimation, 3D Gaussian Splatting training, orthographic rendering, Difix diffusion restoration, and outputs a stitched orthomosaic.
+其中训练和渲采用两套独立的 CUDA 光栅化模块：训练使用 DIFIX 的透视投影模块保证重建质量，渲染使用 Tortho 的正交投影模块直接生成俯视图。
 
-The key innovation is decoupling perspective-projection training from orthographic-projection rendering into two separate CUDA rasterization modules, solving the edge artifact problem of 3DGS under orthographic views.
+**Torthosplatting** is an automatic orthophoto generation tool for indoor scenes. Given room photos/videos captured by phone or camera, it produces high-quality room floor plans via COLMAP reconstruction — designed for **interior design, rental viewing, and real estate display**.
+
+Pipeline: COLMAP sparse reconstruction → automatic coordinate alignment → virtual ortho-camera generation → monocular depth estimation → 3DGS training (perspective) → orthographic rendering (orthogonal) → Difix diffusion restoration → stitching.
+
+Training uses DIFIX's perspective CUDA module for reconstruction quality; rendering uses Tortho's orthographic CUDA module for top-down view generation.
 
 ## 致谢 / Acknowledgments
 
@@ -126,13 +130,13 @@ pip install triton==2.0.0
 
 ## 正射投影原理 / Orthographic Projection
 
-### 问题 / Problem
+### 为什么需要两套 CUDA / Why Dual CUDA
 
-3DGS 默认使用透视投影。训练视角（平视/俯视）与渲染视角（正射向下）不一致，导致正射渲染时边缘出现伪影。
+3DGS 默认使用透视投影渲染。室内场景训练时相机围绕房间拍摄（平视/俯视），但最终需要从正上方（正射）渲染出平面图。两种投影的数学形式不同，需要在不同阶段使用不同的光栅化器。
 
-3DGS uses perspective projection by default. Training views (oblique/looking-down) differ from the rendering view (top-down orthographic), causing edge artifacts.
+3DGS renders with perspective projection by default. Indoor scenes are captured by walking around the room (oblique views), but the final output needs a top-down orthographic view. The two projection types have different mathematical formulations, requiring different rasterizers at different stages.
 
-### 解决方案：双 CUDA 模块 / Solution: Dual CUDA Modules
+### 双 CUDA 模块 / Dual CUDA Modules
 
 | 模块 / Module | 用途 / Use | 投影 / Projection | 雅可比矩阵 / Jacobian |
 |--------------|-----------|-------------------|----------------------|

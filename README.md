@@ -28,6 +28,16 @@ Difix diffusion restoration
 SIFT stitching ──→ Room orthophoto floor plan
 ```
 
+## Results / 效果展示
+
+| playroom | room |
+|----------|------|
+| ![playroom](assets/playroom.jpg) | ![room](assets/room.jpg) |
+
+| Meetingroom | drjohnson |
+|-------------|-----------|
+| ![Meetingroom](assets/Meetingroom.jpg) | ![drjohnson](assets/drjohnson.jpg) |
+
 ## Quick Start
 
 ### Requirements

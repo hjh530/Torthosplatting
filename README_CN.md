@@ -28,6 +28,16 @@ Difix 扩散修复
 SIFT 拼接 ──→ 房间正射平面图
 ```
 
+## 效果展示 / Results
+
+| playroom | room |
+|----------|------|
+| ![playroom](assets/playroom.jpg) | ![room](assets/room.jpg) |
+
+| Meetingroom | drjohnson |
+|-------------|-----------|
+| ![Meetingroom](assets/Meetingroom.jpg) | ![drjohnson](assets/drjohnson.jpg) |
+
 ## 快速开始
 
 ### 环境要求

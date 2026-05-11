@@ -95,8 +95,8 @@ pip install triton==2.0.0
 
 3DGS 将每个 3D 高斯椭球投影到 2D 图像平面。投影涉及两个数学组件：
 
-1. **投影矩阵**  `P` （Python 层）：将相机坐标 `(x_c, y_c, z_c)` 映射到裁剪空间
-2. **协方差雅可比**  `J` （CUDA 层）：将 3D 协方差矩阵 `\Sigma_{3D}` 投影到 2D 屏幕空间  `\Sigma_{2D}` 
+1. **投影矩阵** $P$（Python 层）：将相机坐标 $(x_c, y_c, z_c)$ 映射到裁剪空间
+2. **协方差雅可比** $J$（CUDA 层）：将 3D 协方差矩阵 $\Sigma_{3D}$ 投影到 2D 屏幕空间 $\Sigma_{2D}$
 
 训练和渲染的投影关系：
 
@@ -107,13 +107,13 @@ pip install triton==2.0.0
 
 #### 1.1 透视投影（训练）
 
-标准针孔相机将 3D 点 `(X, Y, Z)` 映射到像素  `(u, v)` ：
+标准针孔相机将 3D 点 $(X, Y, Z)$ 映射到像素 $(u, v)$：
 
 $$u = f_x \cdot \frac{X}{Z} + c_x, \quad v = f_y \cdot \frac{Y}{Z} + c_y$$
 
-其中 `f_x, f_y` 为像素焦距， `c_x, c_y`  为主点。关键观察：坐标被 **深度 `Z` 除** — 远处物体更小。
+其中 $f_x, f_y$ 为像素焦距，$c_x, c_y$ 为主点。关键观察：坐标被 **深度 $Z$ 除** — 远处物体更小。
 
-OpenGL 风格的透视投影矩阵  `P_{persp}` ：
+OpenGL 风格的透视投影矩阵 $P_{persp}$：
 
 $$P_{persp} = \begin{bmatrix}
 \frac{2n}{r-l} & 0 & \frac{r+l}{r-l} & 0 \\
@@ -122,7 +122,7 @@ $$P_{persp} = \begin{bmatrix}
 0 & 0 & 1 & 0
 \end{bmatrix}$$
 
-其中 `n, f` = 近/远平面， `l, r, b, t`  = `z=n` 处的视锥体边界。
+其中 $n, f$ = 近/远平面，$l, r, b, t$ = $z=n$ 处的视锥体边界。
 
 **代码**（`utils/graphics_utils.py`）：
 
@@ -142,9 +142,9 @@ P[1,1] = 2.0 * znear / (top - bottom)
 
 $$u = f_x \cdot X + c_x, \quad v = f_y \cdot Y + c_y$$
 
-不除以  `Z` 。所有深度的物体等大 — 正是平面图需要的效果。
+不除以 $Z$。所有深度的物体等大 — 正是平面图需要的效果。
 
-正交投影矩阵  `P_{ortho}` ：
+正交投影矩阵 $P_{ortho}$：
 
 $$P_{ortho} = \begin{bmatrix}
 \frac{2}{r-l} & 0 & 0 & -\frac{r+l}{r-l} \\
@@ -153,10 +153,10 @@ $$P_{ortho} = \begin{bmatrix}
 0 & 0 & 0 & 1
 \end{bmatrix}$$
 
-与 `P_{persp}` 的关键区别：
-- ** `P[0,0]`  和 `P[1,1]` 不含  `n` **：缩放与深度无关
-- ** `P[0,3]` 、 `P[1,3]`  替代  `P[0,2]` 、 `P[1,2]` **：XY 平移而非透视偏移
-- ** `P[3,2]=0` ** 而非  `1` ：齐次坐标中无透视除法
+与 $P_{persp}$ 的关键区别：
+- **$P[0,0]$ 和 $P[1,1]$ 不含 $n$**：缩放与深度无关
+- **$P[0,3]$、$P[1,3]$ 替代 $P[0,2]$、$P[1,2]$**：XY 平移而非透视偏移
+- **$P[3,2]=0$** 而非 $1$：齐次坐标中无透视除法
 
 **代码**：
 
@@ -171,62 +171,34 @@ return (right-left)/2, (top-bottom)/2, P  # 返回半尺寸给渲染器
 
 #### 1.3 为什么雅可比也必须改变
 
-3D 高斯协方差 `\Sigma_{3D}` 投影到 2D 屏幕空间：
+3D 高斯协方差 $\Sigma_{3D}$ 投影到 2D 屏幕空间：
 
 $$\Sigma_{2D} = J \cdot W \cdot \Sigma_{3D} \cdot W^T \cdot J^T$$
 
-其中 `W` 是视图矩阵的旋转部分， `J`  是**投影雅可比** — 屏幕坐标对相机坐标的导数：
+其中 $W$ 是视图矩阵的旋转部分，$J$ 是**投影雅可比** — 屏幕坐标对相机坐标的导数：
 
 $$J = \begin{bmatrix}
 \frac{\partial u}{\partial X} & \frac{\partial u}{\partial Y} & \frac{\partial u}{\partial Z} \\
 \frac{\partial v}{\partial X} & \frac{\partial v}{\partial Y} & \frac{\partial v}{\partial Z}
 \end{bmatrix}$$
 
-**透视**投影（
-
-$$
-u = f_x \cdot X/Z
-$$
-
-，
-
-$$
-v = f_y \cdot Y/Z
-$$
-
-）：
+**透视**投影（$u = f_x \cdot X/Z$，$v = f_y \cdot Y/Z$）：
 
 $$J_{persp} = \begin{bmatrix}
 \frac{f_x}{Z} & 0 & -\frac{f_x \cdot X}{Z^2} \\
 0 & \frac{f_y}{Z} & -\frac{f_y \cdot Y}{Z^2}
 \end{bmatrix}$$
 
-$$
--\frac{f \cdot X}{Z^2}
-$$
+$-\frac{f \cdot X}{Z^2}$ 项是**泰勒展开修正**：高斯体侧移 $\Delta X$ 时，其深度 $Z$ 会改变屏幕位置。
 
- 项是**泰勒展开修正**：高斯体侧移 `\Delta X` 时，其深度 `Z` 会改变屏幕位置。
-
-**正交**投影（
-
-$$
-u = f_x \cdot X
-$$
-
-，
-
-$$
-v = f_y \cdot Y
-$$
-
-）：
+**正交**投影（$u = f_x \cdot X$，$v = f_y \cdot Y$）：
 
 $$J_{ortho} = \begin{bmatrix}
 f_x & 0 & 0 \\
 0 & f_y & 0
 \end{bmatrix}$$
 
-无 `1/Z` 缩放，无泰勒修正 — 导数是常数。
+无 $1/Z$ 缩放，无泰勒修正 — 导数是常数。
 
 **CUDA 中**（`forward.cu`）：
 
@@ -251,100 +223,52 @@ COLMAP 重建输出的是任意坐标系——地面可能倾斜，墙壁可能�
 
 #### 2.1 两步对齐
 
-设 `P_{orig}` 为 COLMAP 坐标系中的点。目标是新坐标系满足：
-- **Z 轴** 
-
-$$
-\uparrow
-$$
-
- = 地面法线（上方方向）
+设 $P_{orig}$ 为 COLMAP 坐标系中的点。目标是新坐标系满足：
+- **Z 轴** $\uparrow$ = 地面法线（上方方向）
 - **X、Y 轴** = 与房间墙壁对齐
-- **原点** = 地面参考点  `P_{ground}` 
+- **原点** = 地面参考点 $P_{ground}$
 
 $$P_{aligned} = A_2 \cdot A_1 \cdot (P_{orig} - P_{ground})$$
 
-其中 `A_1` 将地面法线对齐到 Z， `A_2`  将墙壁对齐到 XY 轴。
+其中 $A_1$ 将地面法线对齐到 Z，$A_2$ 将墙壁对齐到 XY 轴。
 
-#### 2.2 步骤1：地面对齐（ `A_1` ）
+#### 2.2 步骤1：地面对齐（$A_1$）
 
 **RANSAC 平面拟合**：随机采样 3 点子集，计算平面法线，保留内点最多的：
 
 $$\hat{n} = \arg\max_{n} |\{p_i : |n \cdot (p_i - p_0)| < \tau\}|$$
 
-其中 `\tau = 0.02` 为距离阈值。
+其中 $\tau = 0.02$ 为距离阈值。
 
 **地面 vs 天花板判定**：临时将法线旋转到 Z，检查垂直分布：
 
 $$\text{span}_\text{low} = P_{50}(z) - P_{10}(z), \quad \text{span}_\text{high} = P_{90}(z) - P_{50}(z)$$
 
-若 
+若 $\text{span}_\text{low} \geq \text{span}_\text{high}$，拟合的平面是天花板 — 翻转 $n \leftarrow -n$。
 
-$$
-\text{span}_\text{low} \geq \text{span}_\text{high}
-$$
-
-，拟合的平面是天花板 — 翻转 
-
-$$
-n \leftarrow -n
-$$
-
-。
-
-**Rodrigues 旋转**将 `n` 对齐到  `[0,0,1]` ：
+**Rodrigues 旋转**将 $n$ 对齐到 $[0,0,1]$：
 
 $$A_1 = I + [v]_\times + [v]_\times^2 \cdot \frac{1-c}{s^2}$$
 
-其中 
+其中 $v = n \times [0,0,1]$（旋转轴），$c = n \cdot [0,0,1]$（余弦），$s = \|v\|$（正弦），$[v]_\times$ 为叉积反对称矩阵。
 
-$$
-v = n \times [0,0,1]
-$$
-
-（旋转轴），
-
-$$
-c = n \cdot [0,0,1]
-$$
-
-（余弦）， `s = \|v\|` （正弦），
-
-$$
-[v]_\times
-$$
-
- 为叉积反对称矩阵。
-
-#### 2.3 步骤2：墙壁对齐（ `A_2` ）
+#### 2.3 步骤2：墙壁对齐（$A_2$）
 
 **XY 密度投影**：将已对齐点投影到 XY 平面，用 k-NN 距离和 MAD 阈值做密度离群滤波：
 
 $$\text{keep}(p_i) = \text{knn\_dist}(p_i) \leq \min(P_{97}(\text{knn\_dist}), \text{median} + 4 \cdot \text{MAD})$$
 
-**Hough 线段检测**：栅格化投影点，Canny 边缘检测，概率 Hough 变换提取线段 
-
-$$
-\{(\mathbf{p}_1, \mathbf{p}_2)\}
-$$
-
-。
+**Hough 线段检测**：栅格化投影点，Canny 边缘检测，概率 Hough 变换提取线段 $\{(\mathbf{p}_1, \mathbf{p}_2)\}$。
 
 **边缘筛选**：仅保留靠近点云外轮廓的线段。
 
-**正交方向搜索**：对每个候选角  `\theta \in [0°, 180°)` ，计算对齐到 `\theta` 和 `\theta + 90°` 的线段总支持：
+**正交方向搜索**：对每个候选角 $\theta \in [0°, 180°)$，计算对齐到 $\theta$ 和 $\theta + 90°$ 的线段总支持：
 
 $$\text{score}(\theta) = \sum_{\text{seg } \approx \theta} \text{length}(\text{seg}) + \sum_{\text{seg } \approx \theta+90°} \text{length}(\text{seg})$$
 
-选择最大化得分的角度  `\theta^*` 。
+选择最大化得分的角度 $\theta^*$。
 
-**旋转对齐**：
-
-$$
-A_2 = R_z(-\theta^*)
-$$
-
-，绕 Z 轴旋转：
+**旋转对齐**：$A_2 = R_z(-\theta^*)$，绕 Z 轴旋转：
 
 $$A_2 = \begin{bmatrix}
 \cos\theta^* & -\sin\theta^* & 0 \\
@@ -354,31 +278,13 @@ $$A_2 = \begin{bmatrix}
 
 #### 2.4 步骤3：虚拟相机放置
 
-对齐后场景有明确定义的 XY 包围盒。在 
-
-$$
-5 \times 5
-$$
-
- 网格中放置 25 个虚拟相机：
+对齐后场景有明确定义的 XY 包围盒。在 $5 \times 5$ 网格中放置 25 个虚拟相机：
 
 $$\mathbf{C}_{ij} = \begin{bmatrix} x_{min} + (i+0.5) \cdot \frac{x_{max}-x_{min}}{5} \\ y_{min} + (j+0.5) \cdot \frac{y_{max}-y_{min}}{5} \\ 0.8 \cdot z_{max} \end{bmatrix}, \quad i,j \in \{0,1,2,3,4\}$$
 
-每个相机朝下，旋转四元数 
+每个相机朝下，旋转四元数 $\mathbf{q} = [0, 1, 0, 0]$（恒等旋转，在世界坐标中沿 $-Z$ 方向观察）。
 
-$$
-\mathbf{q} = [0, 1, 0, 0]
-$$
-
-（恒等旋转，在世界坐标中沿 `-Z` 方向观察）。
-
-相机外参：
-
-$$
-\mathbf{t} = -R_{ortho} \cdot \mathbf{C}
-$$
-
-。
+相机外参：$\mathbf{t} = -R_{ortho} \cdot \mathbf{C}$。
 
 ```python
 def getProjectionMatrix(znear, zfar, fovX, fovY, orthographic=False):

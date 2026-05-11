@@ -95,25 +95,37 @@ dataset/ortho_output/
 
 3DGS renders by projecting each 3D Gaussian ellipsoid onto the 2D image plane. This projection involves two mathematical components:
 
-1. **Projection Matrix**  `$P`  (Python): maps camera-space coordinates
+1. **Projection Matrix** 
+
+$$
+P
+$$
+
+ (Python): maps camera-space coordinates 
 
 $$
 (x_c, y_c, z_c)
 $$
 
- to clip space
+ to clip space 
 
 $$
 (x_{clip}, y_{clip}, z_{clip})
 $$
 
-2. **Covariance Jacobian**  `$J`  (CUDA): projects the 3D covariance matrix
+2. **Covariance Jacobian** 
+
+$$
+J
+$$
+
+ (CUDA): projects the 3D covariance matrix 
 
 $$
 \Sigma_{3D}
 $$
 
- to 2D screen space
+ to 2D screen space 
 
 $$
 \Sigma_{2D}
@@ -128,13 +140,13 @@ The relationship between training (perspective) and rendering (orthographic) is:
 
 #### 1.1 Perspective Projection (Training)
 
-A standard pinhole camera maps a 3D point
+A standard pinhole camera maps a 3D point 
 
 $$
 (X, Y, Z)
 $$
 
- to pixel coordinates
+ to pixel coordinates 
 
 $$
 (u, v)
@@ -144,21 +156,27 @@ $$
 
 $$u = f_x \cdot \frac{X}{Z} + c_x, \quad v = f_y \cdot \frac{Y}{Z} + c_y$$
 
-where
+where 
 
 $$
 f_x, f_y
 $$
 
- are focal lengths in pixels and
+ are focal lengths in pixels and 
 
 $$
 c_x, c_y
 $$
 
- is the principal point. The key observation: coordinates are **divided by depth  `$Z` ** — distant objects appear smaller.
+ is the principal point. The key observation: coordinates are **divided by depth 
 
-The OpenGL-style perspective projection matrix
+$$
+Z
+$$
+
+** — distant objects appear smaller.
+
+The OpenGL-style perspective projection matrix 
 
 $$
 P_{persp}
@@ -173,19 +191,19 @@ $$P_{persp} = \begin{bmatrix}
 0 & 0 & 1 & 0
 \end{bmatrix}$$
 
-where
+where 
 
 $$
 n, f
 $$
 
- = near/far planes,
+ = near/far planes, 
 
 $$
 l, r, b, t
 $$
 
- = frustum boundaries at
+ = frustum boundaries at 
 
 $$
 z=n
@@ -211,9 +229,15 @@ Orthographic projection discards depth-dependent scaling. A 3D point maps as:
 
 $$u = f_x \cdot X + c_x, \quad v = f_y \cdot Y + c_y$$
 
-No division by  `$Z` . Objects at all depths appear the same size — exactly what we want for a floor plan.
+No division by 
 
-The orthographic projection matrix
+$$
+Z
+$$
+
+. Objects at all depths appear the same size — exactly what we want for a floor plan.
+
+The orthographic projection matrix 
 
 $$
 P_{ortho}
@@ -228,20 +252,26 @@ $$P_{ortho} = \begin{bmatrix}
 0 & 0 & 0 & 1
 \end{bmatrix}$$
 
-Key differences from
+Key differences from 
 
 $$
 P_{persp}
 $$
 
 :
-- **No  `$n`  (znear)** in
+- **No 
+
+$$
+n
+$$
+
+ (znear)** in 
 
 $$
 P[0,0]
 $$
 
- and
+ and 
 
 $$
 P[1,1]
@@ -254,19 +284,19 @@ $$
 P[0,3]
 $$
 
-,
+, 
 
 $$
 P[1,3]
 $$
 
-** instead of
+** instead of 
 
 $$
 P[0,2]
 $$
 
-,
+, 
 
 $$
 P[1,2]
@@ -279,7 +309,13 @@ $$
 P[3,2]=0
 $$
 
-** instead of  `$1` : no perspective divide in homogeneous coordinates
+** instead of 
+
+$$
+1
+$$
+
+: no perspective divide in homogeneous coordinates
 
 **In code**:
 
@@ -294,7 +330,7 @@ return (right-left)/2, (top-bottom)/2, P  # return half-dims for renderer
 
 #### 1.3 Why the Jacobian Must Also Change
 
-The covariance of a 3D Gaussian
+The covariance of a 3D Gaussian 
 
 $$
 \Sigma_{3D}
@@ -304,7 +340,19 @@ $$
 
 $$\Sigma_{2D} = J \cdot W \cdot \Sigma_{3D} \cdot W^T \cdot J^T$$
 
-where  `$W`  is the rotational part of the view matrix, and  `$J`  is the **projective Jacobian** — the derivative of screen coordinates w.r.t. camera coordinates:
+where 
+
+$$
+W
+$$
+
+ is the rotational part of the view matrix, and 
+
+$$
+J
+$$
+
+ is the **projective Jacobian** — the derivative of screen coordinates w.r.t. camera coordinates:
 
 $$J = \begin{bmatrix}
 \frac{\partial u}{\partial X} & \frac{\partial u}{\partial Y} & \frac{\partial u}{\partial Z} \\
@@ -317,7 +365,7 @@ $$
 u = f_x \cdot X/Z
 $$
 
-,
+, 
 
 $$
 v = f_y \cdot Y/Z
@@ -330,7 +378,7 @@ $$J_{persp} = \begin{bmatrix}
 0 & \frac{f_y}{Z} & -\frac{f_y \cdot Y}{Z^2}
 \end{bmatrix}$$
 
-The
+The 
 
 $$
 -\frac{f \cdot X}{Z^2}
@@ -342,7 +390,13 @@ $$
 \Delta X
 $$
 
-), its depth  `$Z`  changes its screen position.
+), its depth 
+
+$$
+Z
+$$
+
+ changes its screen position.
 
 For **orthographic** projection (
 
@@ -350,7 +404,7 @@ $$
 u = f_x \cdot X
 $$
 
-,
+, 
 
 $$
 v = f_y \cdot Y
@@ -363,7 +417,7 @@ f_x & 0 & 0 \\
 0 & f_y & 0
 \end{bmatrix}$$
 
-No
+No 
 
 $$
 1/Z
@@ -394,14 +448,14 @@ The COLMAP reconstruction produces an arbitrary coordinate system — the ground
 
 #### 2.1 The Two-Step Alignment
 
-Let
+Let 
 
 $$
 P_{orig}
 $$
 
  be a point in COLMAP's coordinate system. The goal is a new coordinate system where:
-- **Z-axis**
+- **Z-axis** 
 
 $$
 \uparrow
@@ -409,7 +463,7 @@ $$
 
  = ground normal (up direction)
 - **X, Y axes** = aligned with room walls
-- **Origin** = ground reference point
+- **Origin** = ground reference point 
 
 $$
 P_{ground}
@@ -417,13 +471,13 @@ $$
 
 $$P_{aligned} = A_2 \cdot A_1 \cdot (P_{orig} - P_{ground})$$
 
-where
+where 
 
 $$
 A_1
 $$
 
- aligns the ground normal to Z, and
+ aligns the ground normal to Z, and 
 
 $$
 A_2
@@ -443,7 +497,7 @@ $$
 
 $$\hat{n} = \arg\max_{n} |\{p_i : |n \cdot (p_i - p_0)| < \tau\}|$$
 
-where
+where 
 
 $$
 \tau = 0.02
@@ -455,13 +509,13 @@ $$
 
 $$\text{span}_{low} = P_{50}(z) - P_{10}(z), \quad \text{span}_{high} = P_{90}(z) - P_{50}(z)$$
 
-If
+If 
 
 $$
 \text{span}_{low} \geq \text{span}_{high}
 $$
 
-, the fitted plane is a ceiling — flip
+, the fitted plane is a ceiling — flip 
 
 $$
 n \leftarrow -n
@@ -469,7 +523,13 @@ $$
 
 .
 
-**Rodrigues rotation** to align  `$n`  to
+**Rodrigues rotation** to align 
+
+$$
+n
+$$
+
+ to 
 
 $$
 [0,0,1]
@@ -479,25 +539,25 @@ $$
 
 $$A_1 = I + [v]_\times + [v]_\times^2 \cdot \frac{1-c}{s^2}$$
 
-where
+where 
 
 $$
 v = n \times [0,0,1]
 $$
 
- (rotation axis),
+ (rotation axis), 
 
 $$
 c = n \cdot [0,0,1]
 $$
 
- (cosine),
+ (cosine), 
 
 $$
 s = \|v\|
 $$
 
- (sine), and
+ (sine), and 
 
 $$
 [v]_\times
@@ -517,7 +577,7 @@ $$
 
 $$\text{keep}(p_i) = \text{knn\_dist}(p_i) \leq \min(P_{97}(\text{knn\_dist}), \text{median} + 4 \cdot \text{MAD})$$
 
-**Hough line detection**: rasterize the projected points, apply Canny edge detection, then probabilistic Hough transform to extract line segments
+**Hough line detection**: rasterize the projected points, apply Canny edge detection, then probabilistic Hough transform to extract line segments 
 
 $$
 \{(\mathbf{p}_1, \mathbf{p}_2)\}
@@ -527,19 +587,19 @@ $$
 
 **Edge filtering**: keep only segments near the outer contour of the point cloud.
 
-**Orthogonal direction search**: for each candidate angle
+**Orthogonal direction search**: for each candidate angle 
 
 $$
 \theta \in [0°, 180°)
 $$
 
-, compute the total support from line segments aligned to
+, compute the total support from line segments aligned to 
 
 $$
 \theta
 $$
 
- and
+ and 
 
 $$
 \theta + 90°
@@ -549,7 +609,7 @@ $$
 
 $$\text{score}(\theta) = \sum_{\text{seg } \approx \theta} \text{length}(\text{seg}) + \sum_{\text{seg } \approx \theta+90°} \text{length}(\text{seg})$$
 
-Select the angle
+Select the angle 
 
 $$
 \theta^*
@@ -557,13 +617,13 @@ $$
 
  that maximizes this score.
 
-**Rotation to align**:
+**Rotation to align**: 
 
 $$
 A_2 = R_z(-\theta^*)
 $$
 
-, where
+, where 
 
 $$
 R_z
@@ -579,7 +639,7 @@ $$A_2 = \begin{bmatrix}
 
 #### 2.4 Step 3: Virtual Camera Placement
 
-After alignment, the scene has a well-defined XY bounding box. Place 25 virtual cameras in a
+After alignment, the scene has a well-defined XY bounding box. Place 25 virtual cameras in a 
 
 $$
 5 \times 5
@@ -589,15 +649,21 @@ $$
 
 $$\mathbf{C}_{ij} = \begin{bmatrix} x_{min} + (i+0.5) \cdot \frac{x_{max}-x_{min}}{5} \\ y_{min} + (j+0.5) \cdot \frac{y_{max}-y_{min}}{5} \\ 0.8 \cdot z_{max} \end{bmatrix}, \quad i,j \in \{0,1,2,3,4\}$$
 
-Each camera faces downward with rotation quaternion
+Each camera faces downward with rotation quaternion 
 
 $$
 \mathbf{q} = [0, 1, 0, 0]
 $$
 
- (identity rotation, looking along  `$-Z`  in world coordinates).
+ (identity rotation, looking along 
 
-The camera extrinsics:
+$$
+-Z
+$$
+
+ in world coordinates).
+
+The camera extrinsics: 
 
 $$
 \mathbf{t} = -R_{ortho} \cdot \mathbf{C}

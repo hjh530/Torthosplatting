@@ -1,0 +1,23 @@
+# 编译文件
+*.so
+*.o
+*.cu.o
+build/
+dist/
+*.egg-info/
+__pycache__/
+*.pyc
+
+# 大文件（模型权重）
+checkpoints/*.pth
+
+# 输出目录
+output/
+ortho_output/
+
+# IDE
+.vscode/
+.idea/
+
+# Conda
+*.yml.bak

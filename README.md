@@ -242,9 +242,9 @@ where $\tau = 0.02$ is the distance threshold.
 
 **Ground vs. ceiling detection**: temporarily rotate the normal to Z, then examine the vertical distribution:
 
-$$\text{span}_\text{low} = P_{50}(z) - P_{10}(z), \quad \text{span}_\text{high} = P_{90}(z) - P_{50}(z)$$
+$$\mathrm{span}_\mathrm{low} = P_{50}(z) - P_{10}(z), \quad \mathrm{span}_\mathrm{high} = P_{90}(z) - P_{50}(z)$$
 
-If $\text{span}_\text{low} \geq \text{span}_\text{high}$, the fitted plane is a ceiling — flip $n \leftarrow -n$.
+If $\mathrm{span}_\mathrm{low} \geq \mathrm{span}_\mathrm{high}$, the fitted plane is a ceiling — flip $n \leftarrow -n$.
 
 **Rodrigues rotation** to align $n$ to $[0,0,1]$:
 
@@ -256,7 +256,7 @@ where $v = n \times [0,0,1]$ (rotation axis), $c = n \cdot [0,0,1]$ (cosine), $s
 
 **XY density projection**: project aligned points to the XY plane, apply density-based outlier filtering using k-NN distances and MAD threshold:
 
-$$\text{keep}(p_i) = \text{knn\_dist}(p_i) \leq \min(P_{97}(\text{knn\_dist}), \text{median} + 4 \cdot \text{MAD})$$
+$$\mathrm{keep}(p_i) = \mathrm{knn\_dist}(p_i) \leq \min(P_{97}(\mathrm{knn\_dist}), \mathrm{median} + 4 \cdot \mathrm{MAD})$$
 
 **Hough line detection**: rasterize the projected points, apply Canny edge detection, then probabilistic Hough transform to extract line segments $\{(\mathbf{p}_1, \mathbf{p}_2)\}$.
 
@@ -264,7 +264,7 @@ $$\text{keep}(p_i) = \text{knn\_dist}(p_i) \leq \min(P_{97}(\text{knn\_dist}), \
 
 **Orthogonal direction search**: for each candidate angle $\theta \in [0°, 180°)$, compute the total support from line segments aligned to $\theta$ and $\theta + 90°$:
 
-$$\text{score}(\theta) = \sum_{\text{seg } \approx \theta} \text{length}(\text{seg}) + \sum_{\text{seg } \approx \theta+90°} \text{length}(\text{seg})$$
+$$\mathrm{score}(\theta) = \sum_{\mathrm{seg } \approx \theta} \mathrm{length}(\mathrm{seg}) + \sum_{\mathrm{seg } \approx \theta+90°} \mathrm{length}(\mathrm{seg})$$
 
 Select the angle $\theta^*$ that maximizes this score.
 

@@ -242,9 +242,9 @@ $$\hat{n} = \arg\max_{n} |\{p_i : |n \cdot (p_i - p_0)| < \tau\}|$$
 
 **地面 vs 天花板判定**：临时将法线旋转到 Z，检查垂直分布：
 
-$$\text{span}_\text{low} = P_{50}(z) - P_{10}(z), \quad \text{span}_\text{high} = P_{90}(z) - P_{50}(z)$$
+$$\mathrm{span}_\mathrm{low} = P_{50}(z) - P_{10}(z), \quad \mathrm{span}_\mathrm{high} = P_{90}(z) - P_{50}(z)$$
 
-若 $\text{span}_\text{low} \geq \text{span}_\text{high}$，拟合的平面是天花板 — 翻转 $n \leftarrow -n$。
+若 $\mathrm{span}_\mathrm{low} \geq \mathrm{span}_\mathrm{high}$，拟合的平面是天花板 — 翻转 $n \leftarrow -n$。
 
 **Rodrigues 旋转**将 $n$ 对齐到 $[0,0,1]$：
 
@@ -256,7 +256,7 @@ $$A_1 = I + [v]_\times + [v]_\times^2 \cdot \frac{1-c}{s^2}$$
 
 **XY 密度投影**：将已对齐点投影到 XY 平面，用 k-NN 距离和 MAD 阈值做密度离群滤波：
 
-$$\text{keep}(p_i) = \text{knn\_dist}(p_i) \leq \min(P_{97}(\text{knn\_dist}), \text{median} + 4 \cdot \text{MAD})$$
+$$\mathrm{keep}(p_i) = \mathrm{knn\_dist}(p_i) \leq \min(P_{97}(\mathrm{knn\_dist}), \mathrm{median} + 4 \cdot \mathrm{MAD})$$
 
 **Hough 线段检测**：栅格化投影点，Canny 边缘检测，概率 Hough 变换提取线段 $\{(\mathbf{p}_1, \mathbf{p}_2)\}$。
 
@@ -264,7 +264,7 @@ $$\text{keep}(p_i) = \text{knn\_dist}(p_i) \leq \min(P_{97}(\text{knn\_dist}), \
 
 **正交方向搜索**：对每个候选角 $\theta \in [0°, 180°)$，计算对齐到 $\theta$ 和 $\theta + 90°$ 的线段总支持：
 
-$$\text{score}(\theta) = \sum_{\text{seg } \approx \theta} \text{length}(\text{seg}) + \sum_{\text{seg } \approx \theta+90°} \text{length}(\text{seg})$$
+$$\mathrm{score}(\theta) = \sum_{\mathrm{seg } \approx \theta} \mathrm{length}(\mathrm{seg}) + \sum_{\mathrm{seg } \approx \theta+90°} \mathrm{length}(\mathrm{seg})$$
 
 选择最大化得分的角度 $\theta^*$。
 

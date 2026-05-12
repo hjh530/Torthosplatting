@@ -34,9 +34,9 @@ SIFT stitching ──→ Room orthophoto floor plan
 |----------|------|
 | ![playroom](assets/playroom.jpg) | ![room](assets/room.jpg) |
 
-| Meetingroom | drjohnson |
-|-------------|-----------|
-| ![Meetingroom](assets/Meetingroom.jpg) | ![drjohnson](assets/drjohnson.jpg) |
+| drjohnson | olohuone |
+|-----------|----------|
+| ![drjohnson](assets/drjohnson.jpg) | ![olohuone](assets/olohuone.jpg) |
 
 ## Quick Start
 

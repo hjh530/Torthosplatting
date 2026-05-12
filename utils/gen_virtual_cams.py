@@ -682,9 +682,10 @@ def save_xoy_projection_plot(points_array, bbox, target_height, save_path,
 def generate_render_views_grid(images, bbox, target_height):
     merged = dict(images)
     next_id = max(images.keys(), default=0) + 1
-    ref_id = next((img["camera_id"] for img in images.values()
-                   if not img["name"].startswith("Terr_")), None)
-    if ref_id is None: return images
+    # 取第一个非虚拟相机的 camera_id 作为参考
+    ref_cam = next((img for img in images.values() if not img["name"].startswith("virtual")), None)
+    if ref_cam is None: return images
+    ref_id = ref_cam["camera_id"]
     q_ortho = np.array([0.0, 1.0, 0.0, 0.0])   # 竖直向下
     R_ortho = qvec2rotmat(q_ortho)
     centers = compute_virtual_camera_centers_grid(bbox, target_height)
@@ -845,9 +846,63 @@ def main():
     all_ids = sorted(points3D.keys())
     pts = np.vstack([points3D[pid]["xyz"] for pid in all_ids])
 
-    # ---------- 地面/天花板判定 ----------
-    print("RANSAC 平面拟合...")
-    normal, p0, _ = ransac_plane(pts, RANSAC_ITER, DIST_THRESHOLD)
+    # ---------- 估计真实重力方向（从相机位姿）----------
+    cam_up = np.zeros(3)
+    n_cams = 0
+    for img in images.values():
+        if img["name"].startswith("virtual"):
+            continue
+        R = qvec2rotmat(img["qvec"])
+        cam_up += R[:, 1]  # 相机 Y 轴 ≈ 上方向
+        n_cams += 1
+    if n_cams > 0:
+        gravity = -normalize(cam_up)  # 真实世界"下"方向
+    else:
+        gravity = np.array([0, 0, -1])
+
+    # ---------- 迭代平面提取：排除墙面直到找到地面 ----------
+    ransac_iters = max(200, int(len(pts) * 0.05))  # 自适应迭代次数
+    wall_normals = []  # 记录已提取的墙面法线
+    remaining_pts = pts
+    ground_normal = None
+    ground_p0 = None
+    max_planes = 5
+
+    for plane_idx in range(max_planes):
+        if len(remaining_pts) < 100:
+            break
+
+        normal_i, p0_i, inliers_i = ransac_plane(remaining_pts, ransac_iters, DIST_THRESHOLD)
+        normal_i = normalize(normal_i)
+        dot_g = abs(np.dot(normal_i, gravity))
+
+        if dot_g > 0.7:  # 法线平行重力 → 地面或天花板
+            ground_normal = normal_i
+            ground_p0 = p0_i
+            print(f"平面{plane_idx+1}: 地面/天花板 (dot={dot_g:.2f})")
+            break
+        else:
+            # 墙面：记录法线，排除该墙面点，继续搜索
+            wall_normals.append(normal_i)
+            remaining_pts = remaining_pts[~np.isin(np.arange(len(remaining_pts)), inliers_i)]
+            print(f"平面{plane_idx+1}: 墙面 (dot={dot_g:.2f}), 排除 {len(inliers_i)} 点, 剩余 {len(remaining_pts)}")
+
+    if ground_normal is None:
+        # 所有平面都是墙，用底部点估计地面
+        print("所有平面均为墙面，用底部点估计地面...")
+        z_along_g = pts.dot(gravity)
+        z_low = np.percentile(z_along_g, 10)
+        z_high = np.percentile(z_along_g, 90)
+        bottom = pts[z_along_g < z_low + 0.3 * (z_high - z_low)]
+        if len(bottom) > 100:
+            ground_normal, ground_p0, _ = ransac_plane(bottom, ransac_iters, DIST_THRESHOLD)
+            ground_normal = normalize(ground_normal)
+        else:
+            ground_normal = -gravity
+            ground_p0 = np.zeros(3)
+
+    normal = ground_normal
+    p0 = ground_p0
 
     A1_temp = rotation_from_vector_to_z(normal)
     pts_temp = (pts - p0).dot(A1_temp.T)

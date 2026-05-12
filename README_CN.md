@@ -117,13 +117,13 @@ pip install triton==2.0.0
 
 #### 1.1 透视投影（训练）
 
-标准针孔相机将 3D 点 $(X, Y, Z)$ 映射到像素 $(u, v)$：
+标准针孔相机将 3D 点 $(X, Y, Z)$ 映射到像素 $(u, v)$ ：
 
 $$u = f_x \cdot \frac{X}{Z} + c_x, \quad v = f_y \cdot \frac{Y}{Z} + c_y$$
 
-其中 $f_x, f_y$ 为像素焦距，$c_x, c_y$ 为主点。关键观察：坐标被 **深度 $Z$ 除** — 远处物体更小。
+其中 $f_x, f_y$ 为像素焦距， $c_x, c_y$ 为主点。关键观察：坐标被 **深度 $Z$ 除** — 远处物体更小。
 
-OpenGL 风格的透视投影矩阵 $P_{persp}$：
+OpenGL 风格的透视投影矩阵 $P_{persp}$ ：
 
 $$P_{persp} = \begin{bmatrix}
 \frac{2n}{r-l} & 0 & \frac{r+l}{r-l} & 0 \\
@@ -132,7 +132,7 @@ $$P_{persp} = \begin{bmatrix}
 0 & 0 & 1 & 0
 \end{bmatrix}$$
 
-其中 $n, f$ = 近/远平面，$l, r, b, t$ = $z=n$ 处的视锥体边界。
+其中 $n, f$ = 近/远平面， $l, r, b, t$ = $z=n$ 处的视锥体边界。
 
 **代码**（`utils/graphics_utils.py`）：
 
@@ -152,9 +152,9 @@ P[1,1] = 2.0 * znear / (top - bottom)
 
 $$u = f_x \cdot X + c_x, \quad v = f_y \cdot Y + c_y$$
 
-不除以 $Z$。所有深度的物体等大 — 正是平面图需要的效果。
+不除以 $Z$ 。所有深度的物体等大 — 正是平面图需要的效果。
 
-正交投影矩阵 $P_{ortho}$：
+正交投影矩阵 $P_{ortho}$ ：
 
 $$P_{ortho} = \begin{bmatrix}
 \frac{2}{r-l} & 0 & 0 & -\frac{r+l}{r-l} \\
@@ -165,8 +165,8 @@ $$P_{ortho} = \begin{bmatrix}
 
 与 $P_{persp}$ 的关键区别：
 - **$P[0,0]$ 和 $P[1,1]$ 不含 $n$**：缩放与深度无关
-- **$P[0,3]$、$P[1,3]$ 替代 $P[0,2]$、$P[1,2]$**：XY 平移而非透视偏移
-- **$P[3,2]=0$** 而非 $1$：齐次坐标中无透视除法
+- **$P[0,3]$ 、 $P[1,3]$ 替代 $P[0,2]$ 、 $P[1,2]$**：XY 平移而非透视偏移
+- **$P[3,2]=0$** 而非 $1$ ：齐次坐标中无透视除法
 
 **代码**：
 
@@ -185,14 +185,14 @@ return (right-left)/2, (top-bottom)/2, P  # 返回半尺寸给渲染器
 
 $$\Sigma_{2D} = J \cdot W \cdot \Sigma_{3D} \cdot W^T \cdot J^T$$
 
-其中 $W$ 是视图矩阵的旋转部分，$J$ 是**投影雅可比** — 屏幕坐标对相机坐标的导数：
+其中 $W$ 是视图矩阵的旋转部分， $J$ 是**投影雅可比** — 屏幕坐标对相机坐标的导数：
 
 $$J = \begin{bmatrix}
 \frac{\partial u}{\partial X} & \frac{\partial u}{\partial Y} & \frac{\partial u}{\partial Z} \\
 \frac{\partial v}{\partial X} & \frac{\partial v}{\partial Y} & \frac{\partial v}{\partial Z}
 \end{bmatrix}$$
 
-**透视**投影（$u = f_x \cdot X/Z$，$v = f_y \cdot Y/Z$）：
+**透视**投影（ $u = f_x \cdot X/Z$ ， $v = f_y \cdot Y/Z$ ）：
 
 $$J_{persp} = \begin{bmatrix}
 \frac{f_x}{Z} & 0 & -\frac{f_x \cdot X}{Z^2} \\
@@ -201,7 +201,7 @@ $$J_{persp} = \begin{bmatrix}
 
 $-\frac{f \cdot X}{Z^2}$ 项是**泰勒展开修正**：高斯体侧移 $\Delta X$ 时，其深度 $Z$ 会改变屏幕位置。
 
-**正交**投影（$u = f_x \cdot X$，$v = f_y \cdot Y$）：
+**正交**投影（ $u = f_x \cdot X$ ， $v = f_y \cdot Y$ ）：
 
 $$J_{ortho} = \begin{bmatrix}
 f_x & 0 & 0 \\
@@ -240,9 +240,9 @@ COLMAP 重建输出的是任意坐标系——地面可能倾斜，墙壁可能�
 
 $$P_{aligned} = A_2 \cdot A_1 \cdot (P_{orig} - P_{ground})$$
 
-其中 $A_1$ 将地面法线对齐到 Z，$A_2$ 将墙壁对齐到 XY 轴。
+其中 $A_1$ 将地面法线对齐到 Z， $A_2$ 将墙壁对齐到 XY 轴。
 
-#### 2.2 步骤1：地面对齐（$A_1$）
+#### 2.2 步骤1：地面对齐（ $A_1$ ）
 
 **RANSAC 平面拟合**：随机采样 3 点子集，计算平面法线，保留内点最多的：
 
@@ -254,31 +254,31 @@ $$\hat{n} = \arg\max_{n} |\{p_i : |n \cdot (p_i - p_0)| < \tau\}|$$
 
 $$\mathrm{span}_\mathrm{low} = P_{50}(z) - P_{10}(z), \quad \mathrm{span}_\mathrm{high} = P_{90}(z) - P_{50}(z)$$
 
-若 $\mathrm{span}_\mathrm{low} \geq \mathrm{span}_\mathrm{high}$，拟合的平面是天花板 — 翻转 $n \leftarrow -n$。
+若 $\mathrm{span}_\mathrm{low} \geq \mathrm{span}_\mathrm{high}$ ，拟合的平面是天花板 — 翻转 $n \leftarrow -n$ 。
 
-**Rodrigues 旋转**将 $n$ 对齐到 $[0,0,1]$：
+**Rodrigues 旋转**将 $n$ 对齐到 $[0,0,1]$ ：
 
 $$A_1 = I + [v]_\times + [v]_\times^2 \cdot \frac{1-c}{s^2}$$
 
-其中 $v = n \times [0,0,1]$（旋转轴），$c = n \cdot [0,0,1]$（余弦），$s = \|v\|$（正弦），$[v]_\times$ 为叉积反对称矩阵。
+其中 $v = n \times [0,0,1]$（旋转轴）， $c = n \cdot [0,0,1]$（余弦）， $s = \|v\|$（正弦）， $[v]_\times$ 为叉积反对称矩阵。
 
-#### 2.3 步骤2：墙壁对齐（$A_2$）
+#### 2.3 步骤2：墙壁对齐（ $A_2$ ）
 
 **XY 密度投影**：将已对齐点投影到 XY 平面，用 k-NN 距离和 MAD 阈值做密度离群滤波：
 
 $$\mathrm{keep}(p_i) = \mathrm{knn\_dist}(p_i) \leq \min(P_{97}(\mathrm{knn\_dist}), \mathrm{median} + 4 \cdot \mathrm{MAD})$$
 
-**Hough 线段检测**：栅格化投影点，Canny 边缘检测，概率 Hough 变换提取线段 $\{(\mathbf{p}_1, \mathbf{p}_2)\}$。
+**Hough 线段检测**：栅格化投影点，Canny 边缘检测，概率 Hough 变换提取线段 $\{(\mathbf{p}_1, \mathbf{p}_2)\}$ 。
 
 **边缘筛选**：仅保留靠近点云外轮廓的线段。
 
-**正交方向搜索**：对每个候选角 $\theta \in [0°, 180°)$，计算对齐到 $\theta$ 和 $\theta + 90°$ 的线段总支持：
+**正交方向搜索**：对每个候选角 $\theta \in [0°, 180°)$ ，计算对齐到 $\theta$ 和 $\theta + 90°$ 的线段总支持：
 
 $$\mathrm{score}(\theta) = \sum_{\mathrm{seg } \approx \theta} \mathrm{length}(\mathrm{seg}) + \sum_{\mathrm{seg } \approx \theta+90°} \mathrm{length}(\mathrm{seg})$$
 
-选择最大化得分的角度 $\theta^*$。
+选择最大化得分的角度 $\theta^*$ 。
 
-**旋转对齐**：$A_2 = R_z(-\theta^*)$，绕 Z 轴旋转：
+**旋转对齐**： $A_2 = R_z(-\theta^*)$ ，绕 Z 轴旋转：
 
 $$A_2 = \begin{bmatrix}
 \cos\theta^* & -\sin\theta^* & 0 \\
@@ -294,7 +294,7 @@ $$\mathbf{C}_{ij} = \begin{bmatrix} x_{min} + (i+0.5) \cdot \frac{x_{max}-x_{min
 
 每个相机朝下，旋转四元数 $\mathbf{q} = [0, 1, 0, 0]$（恒等旋转，在世界坐标中沿 $-Z$ 方向观察）。
 
-相机外参：$\mathbf{t} = -R_{ortho} \cdot \mathbf{C}$。
+相机外参： $\mathbf{t} = -R_{ortho} \cdot \mathbf{C}$ 。
 
 ```python
 def getProjectionMatrix(znear, zfar, fovX, fovY, orthographic=False):
@@ -398,95 +398,6 @@ __device__ float3 computeCov2D(
             0,              0,             0);
     }
 }
-```
-
-**直观理解**：透视投影中，高斯体越远（t.z 越大），屏幕投影越小（除以 t.z）。正交投影无此效果，所有距离的高斯体等大。
-
-### 2. 坐标系转换与虚拟位姿生成
-
-`utils/gen_virtual_cams.py` 将 COLMAP 输出的任意坐标系转换为"地面水平、墙壁正交"的标准坐标系，并生成正射俯瞰所需的虚拟相机。
-
-#### 2.1 从相机位置推断地面
-
-COLMAP 坐标轴无物理意义。我们利用**相机位置**来推断真实地面——人围绕房间走动拍摄，相机位置自然近似水平面：
-
-```python
-# SVD 拟合相机位置平面 → 法线接近真实重力方向
-cam_positions = []  # 世界坐标系中的相机中心
-for img in images.values():
-    R = qvec2rotmat(img["qvec"])
-    C = -R.T @ img["tvec"]
-    cam_positions.append(C)
-
-cam_center = cam_positions.mean(axis=0)
-_, _, Vt = np.linalg.svd(cam_positions - cam_center)
-cam_plane_normal = Vt[-1]  # 最小方差方向 = 相机平面法线
-```
-
-#### 2.2 步骤1：迭代排除墙面
-
-RANSAC 寻找点云中最大的平面。在有大面积空白墙壁的房间中，这个平面可能是墙而非地面。我们迭代排除墙面：
-
-```python
-for plane_idx in range(max_planes):
-    normal, p0, inliers = ransac_plane(remaining_pts, ransac_iters, threshold)
-    dot_cam = abs(dot(normal, cam_plane_normal))  # 平行→地面，垂直→墙面
-
-    if dot_cam > 0.7:  # 找到地面或天花板
-        ground_normal, ground_p0 = normal, p0
-        break
-    else:  # 墙面 → 排除内点，继续搜索
-        remaining_pts = remaining_pts[~inliers]
-```
-
-**地面 vs 天花板判定**：将法线旋转至 Z 轴，比较中位数以下和以上的点分布：
-
-$$\mathrm{span}_\mathrm{low} = P_{50}(z) - P_{10}(z), \quad \mathrm{span}_\mathrm{high} = P_{90}(z) - P_{50}(z)$$
-
-若 $\mathrm{span}_\mathrm{low} \geq \mathrm{span}_\mathrm{high}$，翻转法线（天花板 → 地面）。
-
-**Rodrigues 旋转**将 $n$ 对齐至 $[0,0,1]$：
-
-$$A_1 = I + [v]_\times + [v]_\times^2 \cdot \frac{1-c}{s^2}$$
-
-其中 $v = n \times [0,0,1]$，$c = n \cdot [0,0,1]$，$s = \|v\|$。
-
-#### 步骤2: 墙面方向检测
-
-```python
-def align_xy_by_outer_boundary_grid(points):
-    # 1. 点云投影至 XY 平面
-    projected_xy = points[:, :2]
-    # 2. 密度滤波去除离群点
-    projected_xy = density_filter_xy(projected_xy)
-    # 3. 外轮廓提取
-    boundary_pts = extract_outer_contour_xy(projected_xy)
-    # 4. Hough 线段检测
-    hough_segments = detect_hough_line_segments(projected_xy)
-    # 5. 筛选边缘线段
-    edge_segs = filter_by_boundary_proximity(hough_segments, boundary_pts)
-    # 6. 正交方向估计（0-180° 搜索最佳正交对）
-    best_angle = estimate_from_orthogonal_support(edge_segs)
-    # 7. 旋转对齐
-    A2 = rotation_matrix_z(-np.radians(best_angle))
-    return A2
-```
-
-#### 步骤3: 虚拟相机生成
-
-```python
-q_ortho = np.array([0.0, 1.0, 0.0, 0.0])  # 竖直向下
-R_ortho = qvec2rotmat(q_ortho)
-
-for row in range(1, 6):
-    for col in range(1, 6):
-        C = centers[count - 1]
-        t = -R_ortho @ C  # 平移向量
-        images[img_id] = {
-            "qvec": q_ortho, "tvec": t,
-            "camera_id": ref_camera_id,
-            "name": f"virtual_{count}_r{row}_c{col}.png",
-        }
 ```
 
 ### 3. Tortho 对 DIFIX 的四处修改

@@ -260,7 +260,7 @@ $$\mathrm{span}_\mathrm{low} = P_{50}(z) - P_{10}(z), \quad \mathrm{span}_\mathr
 
 $$A_1 = I + [v]_\times + [v]_\times^2 \cdot \frac{1-c}{s^2}$$
 
-其中 $v = n \times [0,0,1]$（旋转轴）， $c = n \cdot [0,0,1]$（余弦）， $s = \|v\|$（正弦）， $[v]_\times$ 为叉积反对称矩阵。
+其中 $v = n \times [0,0,1]$ （旋转轴）， $c = n \cdot [0,0,1]$ （余弦）， $s = \|v\|$ （正弦）， $[v]_\times$  为叉积反对称矩阵。
 
 #### 2.3 步骤2：墙壁对齐（ $A_2$ ）
 
@@ -399,6 +399,8 @@ __device__ float3 computeCov2D(
     }
 }
 ```
+
+**直观理解**：透视投影中，高斯体越远（t.z 越大），屏幕投影越小（除以 t.z）。正交投影无此效果，所有距离的高斯体等大。
 
 ### 3. Tortho 对 DIFIX 的四处修改
 

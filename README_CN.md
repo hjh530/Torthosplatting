@@ -121,7 +121,7 @@ pip install triton==2.0.0
 
 $$u = f_x \cdot \frac{X}{Z} + c_x, \quad v = f_y \cdot \frac{Y}{Z} + c_y$$
 
-其中 $f_x, f_y$ 为像素焦距，$c_x, c_y$ 为主点。关键观察：坐标被 **深度 $Z$ 除** — 远处物体更小。
+其中 $f_x, f_y$ 为像素焦距， $c_x, c_y$ 为主点。关键观察：坐标被 **深度 $Z$ 除** — 远处物体更小。
 
 OpenGL 风格的透视投影矩阵 $P_{persp}$：
 
@@ -132,7 +132,7 @@ $$P_{persp} = \begin{bmatrix}
 0 & 0 & 1 & 0
 \end{bmatrix}$$
 
-其中 $n, f$ = 近/远平面，$l, r, b, t$ = $z=n$ 处的视锥体边界。
+其中 $n, f$ = 近/远平面， $l, r, b, t$ = $z=n$ 处的视锥体边界。
 
 **代码**（`utils/graphics_utils.py`）：
 
@@ -165,7 +165,7 @@ $$P_{ortho} = \begin{bmatrix}
 
 与 $P_{persp}$ 的关键区别：
 - **$P[0,0]$ 和 $P[1,1]$ 不含 $n$**：缩放与深度无关
-- **$P[0,3]$、$P[1,3]$ 替代 $P[0,2]$、$P[1,2]$**：XY 平移而非透视偏移
+- **$P[0,3]$、 $P[1,3]$ 替代 $P[0,2]$、 $P[1,2]$**：XY 平移而非透视偏移
 - **$P[3,2]=0$** 而非 $1$：齐次坐标中无透视除法
 
 **代码**：
@@ -192,7 +192,7 @@ $$J = \begin{bmatrix}
 \frac{\partial v}{\partial X} & \frac{\partial v}{\partial Y} & \frac{\partial v}{\partial Z}
 \end{bmatrix}$$
 
-**透视**投影（$u = f_x \cdot X/Z$，$v = f_y \cdot Y/Z$）：
+**透视**投影（ $u = f_x \cdot X/Z$， $v = f_y \cdot Y/Z$ ）：
 
 $$J_{persp} = \begin{bmatrix}
 \frac{f_x}{Z} & 0 & -\frac{f_x \cdot X}{Z^2} \\
@@ -201,7 +201,7 @@ $$J_{persp} = \begin{bmatrix}
 
 $-\frac{f \cdot X}{Z^2}$ 项是**泰勒展开修正**：高斯体侧移 $\Delta X$ 时，其深度 $Z$ 会改变屏幕位置。
 
-**正交**投影（$u = f_x \cdot X$，$v = f_y \cdot Y$）：
+**正交**投影（ $u = f_x \cdot X$， $v = f_y \cdot Y$ ）：
 
 $$J_{ortho} = \begin{bmatrix}
 f_x & 0 & 0 \\
@@ -242,7 +242,7 @@ $$P_{aligned} = A_2 \cdot A_1 \cdot (P_{orig} - P_{ground})$$
 
 其中 $A_1$ 将地面法线对齐到 Z，$A_2$ 将墙壁对齐到 XY 轴。
 
-#### 2.2 步骤1：地面对齐（$A_1$）
+#### 2.2 步骤1：地面对齐（ $A_1$ ）
 
 **RANSAC 平面拟合**：随机采样 3 点子集，计算平面法线，保留内点最多的：
 
@@ -254,15 +254,15 @@ $$\hat{n} = \arg\max_{n} |\{p_i : |n \cdot (p_i - p_0)| < \tau\}|$$
 
 $$\mathrm{span}_\mathrm{low} = P_{50}(z) - P_{10}(z), \quad \mathrm{span}_\mathrm{high} = P_{90}(z) - P_{50}(z)$$
 
-若 $\mathrm{span}_\mathrm{low} \geq \mathrm{span}_\mathrm{high}$，拟合的平面是天花板 — 翻转 $n \leftarrow -n$。
+若 $\mathrm{span}_\mathrm{low} \geq \mathrm{span}_\mathrm{high}$ ，拟合的平面是天花板 — 翻转 $n \leftarrow -n$。
 
 **Rodrigues 旋转**将 $n$ 对齐到 $[0,0,1]$：
 
 $$A_1 = I + [v]_\times + [v]_\times^2 \cdot \frac{1-c}{s^2}$$
 
-其中 $v = n \times [0,0,1]$（旋转轴），$c = n \cdot [0,0,1]$（余弦），$s = \|v\|$（正弦），$[v]_\times$ 为叉积反对称矩阵。
+其中 $v = n \times [0,0,1]$ （旋转轴）， $c = n \cdot [0,0,1]$ （余弦）， $s = \|v\|$ （正弦）， $[v]_\times$  为叉积反对称矩阵。
 
-#### 2.3 步骤2：墙壁对齐（$A_2$）
+#### 2.3 步骤2：墙壁对齐（ $A_2$ ）
 
 **XY 密度投影**：将已对齐点投影到 XY 平面，用 k-NN 距离和 MAD 阈值做密度离群滤波：
 
@@ -276,9 +276,9 @@ $$\mathrm{keep}(p_i) = \mathrm{knn\_dist}(p_i) \leq \min(P_{97}(\mathrm{knn\_dis
 
 $$\mathrm{score}(\theta) = \sum_{\mathrm{seg } \approx \theta} \mathrm{length}(\mathrm{seg}) + \sum_{\mathrm{seg } \approx \theta+90°} \mathrm{length}(\mathrm{seg})$$
 
-选择最大化得分的角度 $\theta^*$。
+选择最大化得分的角度 $\theta^*$ 。
 
-**旋转对齐**：$A_2 = R_z(-\theta^*)$，绕 Z 轴旋转：
+**旋转对齐**：$A_2 = R_z(-\theta^*)$ ，绕 Z 轴旋转：
 
 $$A_2 = \begin{bmatrix}
 \cos\theta^* & -\sin\theta^* & 0 \\

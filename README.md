@@ -117,13 +117,13 @@ The relationship between training (perspective) and rendering (orthographic) is:
 
 #### 1.1 Perspective Projection (Training)
 
-A standard pinhole camera maps a 3D point $(X, Y, Z)$ to pixel coordinates $(u, v)$:
+A standard pinhole camera maps a 3D point $(X, Y, Z)$ to pixel coordinates $(u, v)$ :
 
 $$u = f_x \cdot \frac{X}{Z} + c_x, \quad v = f_y \cdot \frac{Y}{Z} + c_y$$
 
 where $f_x, f_y$ are focal lengths in pixels and $c_x, c_y$ is the principal point. The key observation: coordinates are **divided by depth $Z$** — distant objects appear smaller.
 
-The OpenGL-style perspective projection matrix $P_{persp}$:
+The OpenGL-style perspective projection matrix $P_{persp}$ :
 
 $$P_{persp} = \begin{bmatrix}
 \frac{2n}{r-l} & 0 & \frac{r+l}{r-l} & 0 \\
@@ -132,7 +132,7 @@ $$P_{persp} = \begin{bmatrix}
 0 & 0 & 1 & 0
 \end{bmatrix}$$
 
-where $n, f$ = near/far planes, $l, r, b, t$ = frustum boundaries at $z=n$.
+where $n, f$ = near/far planes, $l, r, b, t$ = frustum boundaries at $z=n$ .
 
 **In code** (`utils/graphics_utils.py`):
 
@@ -152,9 +152,9 @@ Orthographic projection discards depth-dependent scaling. A 3D point maps as:
 
 $$u = f_x \cdot X + c_x, \quad v = f_y \cdot Y + c_y$$
 
-No division by $Z$. Objects at all depths appear the same size — exactly what we want for a floor plan.
+No division by $Z$ . Objects at all depths appear the same size — exactly what we want for a floor plan.
 
-The orthographic projection matrix $P_{ortho}$:
+The orthographic projection matrix $P_{ortho}$ :
 
 $$P_{ortho} = \begin{bmatrix}
 \frac{2}{r-l} & 0 & 0 & -\frac{r+l}{r-l} \\
@@ -163,10 +163,10 @@ $$P_{ortho} = \begin{bmatrix}
 0 & 0 & 0 & 1
 \end{bmatrix}$$
 
-Key differences from $P_{persp}$:
-- **No $n$ (znear)** in $P[0,0]$ and $P[1,1]$: scaling independent of depth
-- **$P[0,3]$, $P[1,3]$** instead of $P[0,2]$, $P[1,2]$: translation in XY, not perspective shift
-- **$P[3,2]=0$** instead of $1$: no perspective divide in homogeneous coordinates
+Key differences from $P_{persp}$ :
+- **No $n$ (znear)** in $P[0,0]$ and $P[1,1]$ : scaling independent of depth
+- **$P[0,3]$ , $P[1,3]$** instead of $P[0,2]$ , $P[1,2]$ : translation in XY, not perspective shift
+- **$P[3,2]=0$** instead of $1$ : no perspective divide in homogeneous coordinates
 
 **In code**:
 
@@ -192,7 +192,7 @@ $$J = \begin{bmatrix}
 \frac{\partial v}{\partial X} & \frac{\partial v}{\partial Y} & \frac{\partial v}{\partial Z}
 \end{bmatrix}$$
 
-For **perspective** projection ($u = f_x \cdot X/Z$, $v = f_y \cdot Y/Z$):
+For **perspective** projection ($u = f_x \cdot X/Z$ , $v = f_y \cdot Y/Z$):
 
 $$J_{persp} = \begin{bmatrix}
 \frac{f_x}{Z} & 0 & -\frac{f_x \cdot X}{Z^2} \\
@@ -201,7 +201,7 @@ $$J_{persp} = \begin{bmatrix}
 
 The $-\frac{f \cdot X}{Z^2}$ term is the **Taylor expansion correction**: as the Gaussian moves sideways ($\Delta X$), its depth $Z$ changes its screen position.
 
-For **orthographic** projection ($u = f_x \cdot X$, $v = f_y \cdot Y$):
+For **orthographic** projection ($u = f_x \cdot X$ , $v = f_y \cdot Y$):
 
 $$J_{ortho} = \begin{bmatrix}
 f_x & 0 & 0 \\
@@ -270,13 +270,13 @@ for plane_idx in range(max_planes):
 
 $$\mathrm{span}_\mathrm{low} = P_{50}(z) - P_{10}(z), \quad \mathrm{span}_\mathrm{high} = P_{90}(z) - P_{50}(z)$$
 
-If $\mathrm{span}_\mathrm{low} \geq \mathrm{span}_\mathrm{high}$, flip the normal (ceiling → ground).
+If $\mathrm{span}_\mathrm{low} \geq \mathrm{span}_\mathrm{high}$ , flip the normal (ceiling → ground).
 
-**Rodrigues rotation** to align $n$ to $[0,0,1]$:
+**Rodrigues rotation** to align $n$ to $[0,0,1]$ :
 
 $$A_1 = I + [v]_\times + [v]_\times^2 \cdot \frac{1-c}{s^2}$$
 
-where $v = n \times [0,0,1]$, $c = n \cdot [0,0,1]$, $s = \|v\|$.
+where $v = n \times [0,0,1]$ , $c = n \cdot [0,0,1]$ , $s = \|v\|$ .
 
 #### 2.3 Step 2: Wall Alignment ($A_2$)
 
@@ -284,17 +284,17 @@ where $v = n \times [0,0,1]$, $c = n \cdot [0,0,1]$, $s = \|v\|$.
 
 $$\mathrm{keep}(p_i) = \mathrm{knn\_dist}(p_i) \leq \min(P_{97}(\mathrm{knn\_dist}), \mathrm{median} + 4 \cdot \mathrm{MAD})$$
 
-**Hough line detection**: rasterize the projected points, apply Canny edge detection, then probabilistic Hough transform to extract line segments $\{(\mathbf{p}_1, \mathbf{p}_2)\}$.
+**Hough line detection**: rasterize the projected points, apply Canny edge detection, then probabilistic Hough transform to extract line segments $\{(\mathbf{p}_1, \mathbf{p}_2)\}$ .
 
 **Edge filtering**: keep only segments near the outer contour of the point cloud.
 
-**Orthogonal direction search**: for each candidate angle $\theta \in [0°, 180°)$, compute the total support from line segments aligned to $\theta$ and $\theta + 90°$:
+**Orthogonal direction search**: for each candidate angle $\theta \in [0°, 180°)$ , compute the total support from line segments aligned to $\theta$ and $\theta + 90°$ :
 
 $$\mathrm{score}(\theta) = \sum_{\mathrm{seg } \approx \theta} \mathrm{length}(\mathrm{seg}) + \sum_{\mathrm{seg } \approx \theta+90°} \mathrm{length}(\mathrm{seg})$$
 
 Select the angle $\theta^*$ that maximizes this score.
 
-**Rotation to align**: $A_2 = R_z(-\theta^*)$, where $R_z$ is a rotation about the Z-axis:
+**Rotation to align**: $A_2 = R_z(-\theta^*)$ , where $R_z$ is a rotation about the Z-axis:
 
 $$A_2 = \begin{bmatrix}
 \cos\theta^* & -\sin\theta^* & 0 \\
@@ -310,7 +310,7 @@ $$\mathbf{C}_{ij} = \begin{bmatrix} x_{min} + (i+0.5) \cdot \frac{x_{max}-x_{min
 
 Each camera faces downward with rotation quaternion $\mathbf{q} = [0, 1, 0, 0]$ (identity rotation, looking along $-Z$ in world coordinates).
 
-The camera extrinsics: $\mathbf{t} = -R_{ortho} \cdot \mathbf{C}$.
+The camera extrinsics: $\mathbf{t} = -R_{ortho} \cdot \mathbf{C}$ .
 
 **Key difference**: Perspective scales `P[0,0]` and `P[1,1]` by `znear`, making distant objects smaller. Orthographic removes `znear` — objects at all depths appear the same size.
 

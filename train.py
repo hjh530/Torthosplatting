@@ -129,7 +129,7 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations,
     filtered_train = []
     
     for cam in original_train_cameras:
-        if not cam.image_name.startswith("virtual") and not cam.image_name.startswith("Terr_"):
+        if not cam.image_name.startswith("virtual") :
             filtered_train.append(cam)
             
     filtered_train = list(dict.fromkeys(filtered_train))

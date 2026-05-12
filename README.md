@@ -231,36 +231,52 @@ Training requires perspective because the input photos are perspective projectio
 
 The COLMAP reconstruction produces an arbitrary coordinate system — the ground may be tilted, walls rotated. `utils/gen_virtual_cams.py` standardizes this and generates top-down virtual cameras.
 
-#### 2.1 The Two-Step Alignment
+#### 2.1 Camera-Based Ground Plane Estimation
 
-Let $P_{orig}$ be a point in COLMAP's coordinate system. The goal is a new coordinate system where:
-- **Z-axis** $\uparrow$ = ground normal (up direction)
-- **X, Y axes** = aligned with room walls
-- **Origin** = ground reference point $P_{ground}$
+Since COLMAP axes are arbitrary, we need a reliable reference for "up". Rather than relying on the largest RANSAC plane (which may be a wall), we use **camera positions**: people walk around the room, so camera positions naturally lie on a roughly horizontal plane.
 
-$$P_{aligned} = A_2 \cdot A_1 \cdot (P_{orig} - P_{ground})$$
+```python
+# Fit a plane to all camera positions via SVD
+cam_positions = []  # world-space camera centers
+for img in images.values():
+    R = qvec2rotmat(img["qvec"])
+    C = -R.T @ img["tvec"]
+    cam_positions.append(C)
 
-where $A_1$ aligns the ground normal to Z, and $A_2$ aligns walls to XY axes.
+cam_center = cam_positions.mean(axis=0)
+_, _, Vt = np.linalg.svd(cam_positions - cam_center)
+cam_plane_normal = Vt[-1]  # minimum variance → normal to camera plane
+```
 
-#### 2.2 Step 1: Ground Alignment ($A_1$)
+This `cam_plane_normal` serves as our ground truth "up" vector, since cameras are held at roughly constant height above the floor.
 
-**RANSAC plane fitting**: randomly sample 3-point subsets, compute plane normals, keep the one with most inliers:
+#### 2.2 Step 1: Iterative Wall Exclusion ($A_1$)
 
-$$\hat{n} = \arg\max_{n} |\{p_i : |n \cdot (p_i - p_0)| < \tau\}|$$
+RANSAC finds the largest planar surface in the point cloud. In rooms with large blank walls, this may be a wall rather than the floor. We iterate: if the RANSAC normal is perpendicular to the camera-plane normal, it's a wall — exclude its inliers and try again.
 
-where $\tau = 0.02$ is the distance threshold.
+```python
+for plane_idx in range(max_planes):
+    normal, p0, inliers = ransac_plane(remaining_pts, ransac_iters, threshold)
+    dot_cam = abs(dot(normal, cam_plane_normal))  # parallel → floor, perpendicular → wall
 
-**Ground vs. ceiling detection**: temporarily rotate the normal to Z, then examine the vertical distribution:
+    if dot_cam > 0.7:  # Ground or ceiling found
+        ground_normal, ground_p0 = normal, p0
+        break
+    else:  # Wall — exclude and continue searching
+        remaining_pts = remaining_pts[~inliers]
+```
+
+**Ground vs. ceiling**: rotate the normal to Z, compare point spread below vs. above the median:
 
 $$\mathrm{span}_\mathrm{low} = P_{50}(z) - P_{10}(z), \quad \mathrm{span}_\mathrm{high} = P_{90}(z) - P_{50}(z)$$
 
-If $\mathrm{span}_\mathrm{low} \geq \mathrm{span}_\mathrm{high}$, the fitted plane is a ceiling — flip $n \leftarrow -n$.
+If $\mathrm{span}_\mathrm{low} \geq \mathrm{span}_\mathrm{high}$, flip the normal (ceiling → ground).
 
 **Rodrigues rotation** to align $n$ to $[0,0,1]$:
 
 $$A_1 = I + [v]_\times + [v]_\times^2 \cdot \frac{1-c}{s^2}$$
 
-where $v = n \times [0,0,1]$ (rotation axis), $c = n \cdot [0,0,1]$ (cosine), $s = \|v\|$ (sine), and $[v]_\times$ is the skew-symmetric cross-product matrix.
+where $v = n \times [0,0,1]$, $c = n \cdot [0,0,1]$, $s = \|v\|$.
 
 #### 2.3 Step 2: Wall Alignment ($A_2$)
 
@@ -295,40 +311,6 @@ $$\mathbf{C}_{ij} = \begin{bmatrix} x_{min} + (i+0.5) \cdot \frac{x_{max}-x_{min
 Each camera faces downward with rotation quaternion $\mathbf{q} = [0, 1, 0, 0]$ (identity rotation, looking along $-Z$ in world coordinates).
 
 The camera extrinsics: $\mathbf{t} = -R_{ortho} \cdot \mathbf{C}$.
-
-```python
-def getProjectionMatrix(znear, zfar, fovX, fovY, orthographic=False):
-    if not orthographic:
-        # Perspective: frustum — objects shrink with distance
-        tanHalfFovY = math.tan(fovY / 2)
-        tanHalfFovX = math.tan(fovX / 2)
-        top = tanHalfFovY * znear
-        right = tanHalfFovX * znear
-        P = torch.zeros(4, 4)
-        P[0, 0] = 2.0 * znear / (right - left)
-        P[0, 2] = (right + left) / (right - left)
-        P[1, 1] = 2.0 * znear / (top - bottom)
-        P[1, 2] = (top + bottom) / (top - bottom)
-        P[2, 2] = zfar / (zfar - znear)
-        P[2, 3] = -(zfar * znear) / (zfar - znear)
-        P[3, 2] = 1.0
-        return P
-    else:
-        # Orthographic: no perspective scaling
-        tanHalfFovY = math.tan(fovY / 2)
-        tanHalfFovX = math.tan(fovX / 2)
-        top = 5          # fixed viewport height
-        right = tanHalfFovX * 5 / tanHalfFovY  # maintain aspect ratio
-        P = torch.zeros(4, 4)
-        P[0, 0] = 2.0 / (right - left)        # X scale (no z)
-        P[0, 3] = -(right + left) / (right - left)  # X translation
-        P[1, 1] = 2.0 / (top - bottom)        # Y scale (no z)
-        P[1, 3] = -(top + bottom) / (top - bottom)  # Y translation
-        P[2, 2] = -2.0 / (zfar - znear)
-        P[2, 3] = -(zfar + znear) / (zfar - znear)
-        P[3, 3] = 1.0
-        return (right - left) / 2, (top - bottom) / 2, P
-```
 
 **Key difference**: Perspective scales `P[0,0]` and `P[1,1]` by `znear`, making distant objects smaller. Orthographic removes `znear` — objects at all depths appear the same size.
 

@@ -406,37 +406,50 @@ __device__ float3 computeCov2D(
 
 `utils/gen_virtual_cams.py` 将 COLMAP 输出的任意坐标系转换为"地面水平、墙壁正交"的标准坐标系，并生成正射俯瞰所需的虚拟相机。
 
-#### 整体变换流程
+#### 2.1 从相机位置推断地面
 
-```
-COLMAP 原始坐标系
-    ↓
-步骤1: RANSAC 拟合地面 → 法线旋转至 Z 轴 (矩阵 A1)
-    ↓
-步骤2: XY 投影 + Hough 线段 → 旋转墙面方向对齐 XY 轴 (矩阵 A2)
-    ↓
-最终变换: P' = A2 · A1 · (P - P_ground)
-    ↓
-在 XY 包围盒内 5×5 采样虚拟相机 → 正射渲染
-```
-
-#### 步骤1: 地面检测
+COLMAP 坐标轴无物理意义。我们利用**相机位置**来推断真实地面——人围绕房间走动拍摄，相机位置自然近似水平面：
 
 ```python
-# RANSAC 平面拟合
-normal, p0, inliers = ransac_plane(pts, iters=2000, thresh=0.02)
+# SVD 拟合相机位置平面 → 法线接近真实重力方向
+cam_positions = []  # 世界坐标系中的相机中心
+for img in images.values():
+    R = qvec2rotmat(img["qvec"])
+    C = -R.T @ img["tvec"]
+    cam_positions.append(C)
 
-# 判定地面 vs 天花板
-A1_temp = rotation_from_vector_to_z(normal)  # 法线→Z轴
-pts_temp = (pts - p0) @ A1_temp.T
-span_low = z50 - z10   # 低处点云跨度
-span_high = z90 - z50  # 高处点云跨度
-if span_low >= span_high:  # 低处跨度大 → 天花板
-    normal = -normal       # 翻转法线
-A1 = rotation_from_vector_to_z(normal)  # 最终地面→Z轴
+cam_center = cam_positions.mean(axis=0)
+_, _, Vt = np.linalg.svd(cam_positions - cam_center)
+cam_plane_normal = Vt[-1]  # 最小方差方向 = 相机平面法线
 ```
 
-`rotation_from_vector_to_z(n)` 使用 Rodrigues 旋转公式，计算将任意法线向量旋转至 `[0,0,1]` 的旋转矩阵。
+#### 2.2 步骤1：迭代排除墙面
+
+RANSAC 寻找点云中最大的平面。在有大面积空白墙壁的房间中，这个平面可能是墙而非地面。我们迭代排除墙面：
+
+```python
+for plane_idx in range(max_planes):
+    normal, p0, inliers = ransac_plane(remaining_pts, ransac_iters, threshold)
+    dot_cam = abs(dot(normal, cam_plane_normal))  # 平行→地面，垂直→墙面
+
+    if dot_cam > 0.7:  # 找到地面或天花板
+        ground_normal, ground_p0 = normal, p0
+        break
+    else:  # 墙面 → 排除内点，继续搜索
+        remaining_pts = remaining_pts[~inliers]
+```
+
+**地面 vs 天花板判定**：将法线旋转至 Z 轴，比较中位数以下和以上的点分布：
+
+$$\mathrm{span}_\mathrm{low} = P_{50}(z) - P_{10}(z), \quad \mathrm{span}_\mathrm{high} = P_{90}(z) - P_{50}(z)$$
+
+若 $\mathrm{span}_\mathrm{low} \geq \mathrm{span}_\mathrm{high}$，翻转法线（天花板 → 地面）。
+
+**Rodrigues 旋转**将 $n$ 对齐至 $[0,0,1]$：
+
+$$A_1 = I + [v]_\times + [v]_\times^2 \cdot \frac{1-c}{s^2}$$
+
+其中 $v = n \times [0,0,1]$，$c = n \cdot [0,0,1]$，$s = \|v\|$。
 
 #### 步骤2: 墙面方向检测
 

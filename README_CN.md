@@ -2,7 +2,7 @@
 
 > 室内正射影像自动生成工具 — 手机拍房间，一键出平面图。
 
-[英文文档/English README](README.md)
+[英文文档/ English README](README.md)
 
 ---
 

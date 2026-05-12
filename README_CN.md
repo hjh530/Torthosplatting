@@ -252,9 +252,9 @@ $$\hat{n} = \arg\max_{n} |\{p_i : |n \cdot (p_i - p_0)| < \tau\}|$$
 
 **地面 vs 天花板判定**：临时将法线旋转到 Z，检查垂直分布：
 
-$$\mathrm{span}_\mathrm{low} = P_{50}(z) - P_{10}(z), \quad \mathrm{span}_\mathrm{high} = P_{90}(z) - P_{50}(z)$$
+$$\mathrm{span_{low}} = P_{50}(z) - P_{10}(z), \quad \mathrm{span_{high}} = P_{90}(z) - P_{50}(z)$$
 
-若 $\mathrm{span}_\mathrm{low} \geq \mathrm{span}_\mathrm{high}$ ，拟合的平面是天花板 — 翻转 $n \leftarrow -n$ 。
+若 $\mathrm{span_{low}} \geq \mathrm{span_{high}}$ ，拟合的平面是天花板 — 翻转 $n \leftarrow -n$ 。
 
 **Rodrigues 旋转**将 $n$ 对齐到 $[0,0,1]$ ：
 

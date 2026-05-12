@@ -268,9 +268,9 @@ for plane_idx in range(max_planes):
 
 **Ground vs. ceiling**: rotate the normal to Z, compare point spread below vs. above the median:
 
-$$\mathrm{span}_\mathrm{low} = P_{50}(z) - P_{10}(z), \quad \mathrm{span}_\mathrm{high} = P_{90}(z) - P_{50}(z)$$
+$$\mathrm{span_{low}} = P_{50}(z) - P_{10}(z), \quad \mathrm{span_{high}} = P_{90}(z) - P_{50}(z)$$
 
-If $\mathrm{span}_\mathrm{low} \geq \mathrm{span}_\mathrm{high}$ , flip the normal (ceiling → ground).
+If $\mathrm{span_{low}} \geq \mathrm{span_{high}}$ , flip the normal (ceiling → ground).
 
 **Rodrigues rotation** to align $n$ to $[0,0,1]$ :
 
@@ -378,80 +378,6 @@ __device__ float3 computeCov2D(..., const bool orthographic) {
 ```
 
 **Intuition**: In perspective, farther Gaussians (larger `t.z`) project smaller on screen (divided by `t.z`). Orthographic has no depth-dependent scaling.
-
-### 2. Coordinate Transform & Virtual Camera Generation
-
-`utils/gen_virtual_cams.py` transforms the arbitrary COLMAP coordinate system into a standardized one where the ground is horizontal and walls are axis-aligned, then generates virtual orthographic cameras.
-
-#### Pipeline
-
-```
-COLMAP original coordinates
-    ↓
-Step 1: RANSAC ground plane → rotate normal to Z-axis (matrix A1)
-    ↓
-Step 2: XY projection + Hough lines → rotate walls to XY axes (matrix A2)
-    ↓
-Final: P' = A2 · A1 · (P - P_ground)
-    ↓
-5×5 grid virtual cameras in XY bbox → ortho rendering
-```
-
-#### Step 1: Ground Detection
-
-```python
-# RANSAC plane fitting
-normal, p0, inliers = ransac_plane(pts, iters=2000, thresh=0.02)
-
-# Determine ground vs ceiling
-A1_temp = rotation_from_vector_to_z(normal)
-pts_temp = (pts - p0) @ A1_temp.T
-span_low = z50 - z10    # span of lower points
-span_high = z90 - z50   # span of upper points
-if span_low >= span_high:  # ceiling detected → flip
-    normal = -normal
-A1 = rotation_from_vector_to_z(normal)  # ground → Z
-```
-
-`rotation_from_vector_to_z(n)` computes the rotation matrix that aligns an arbitrary normal vector to `[0,0,1]` using the Rodrigues rotation formula.
-
-#### Step 2: Wall Direction Detection
-
-```python
-def align_xy_by_outer_boundary_grid(points):
-    # 1. Project to XY plane
-    projected_xy = points[:, :2]
-    # 2. Density filter to remove outliers
-    projected_xy = density_filter_xy(projected_xy)
-    # 3. Extract outer contour
-    boundary_pts = extract_outer_contour_xy(projected_xy)
-    # 4. Hough line detection
-    hough_segments = detect_hough_line_segments(projected_xy)
-    # 5. Filter edge-proximal segments
-    edge_segs = filter_by_boundary_proximity(hough_segments, boundary_pts)
-    # 6. Estimate best orthogonal direction
-    best_angle = estimate_from_orthogonal_support(edge_segs)
-    # 7. Rotate to align
-    A2 = rotation_matrix_z(-np.radians(best_angle))
-    return A2
-```
-
-#### Step 3: Virtual Camera Generation
-
-```python
-q_ortho = np.array([0.0, 1.0, 0.0, 0.0])  # downward-facing
-R_ortho = qvec2rotmat(q_ortho)
-
-for row in range(1, 6):
-    for col in range(1, 6):
-        C = centers[count - 1]
-        t = -R_ortho @ C
-        images[img_id] = {
-            "qvec": q_ortho, "tvec": t,
-            "camera_id": ref_camera_id,
-            "name": f"virtual_{count}_r{row}_c{col}.png",
-        }
-```
 
 ### 3. Four Changes from DIFIX to Tortho
 
